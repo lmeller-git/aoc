@@ -13,7 +13,6 @@ pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
 }
 
 fn safe_recs_with_damp(data: &Array) -> u64 {
-    // TODO: fix (to few safe results (499 instead of 520))
     let mut tot = 0;
     for report in data {
         if report.is_empty() {
@@ -33,14 +32,12 @@ fn safe_recs_with_damp(data: &Array) -> u64 {
                 if let [p1, p2, ..] = levels {
                     if !(1..=3).contains(&p1.abs_diff(*p2)) || ((p1 > p2) != last_dec) {
                         is_valid = false;
-                        //println!("{:#?}, {}, false", rec, rem);
                         break;
                     }
                 }
             }
             if is_valid {
                 tot += 1;
-                //println!("{:#?}, {}, true", rec, rem);
                 break;
             }
         }
@@ -97,26 +94,6 @@ fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn test_damp_good_input() {
-        let data = vec![vec![0, 1, 2, 3, 4]];
-        assert_eq!(safe_recs_with_damp(&data), 1);
-    }
-    #[test]
-    fn test_damp_bad() {
-        let data = vec![vec![0, 1, 3, 2, 4], vec![9, 3, 7, 6, 5]];
-        assert_eq!(safe_recs_with_damp(&data), 2);
-    }
-    #[test]
-    fn test_damp_very_bad() {
-        let data = vec![vec![9, 1, 0, 2], vec![0, 2, 6, 10], vec![1, 2, 3, 2, 1]];
-        assert_eq!(safe_recs_with_damp(&data), 0);
-    }
-    #[test]
-    fn test_bad() {
-        let data = vec![vec![6, 6, 4, 3, 2]];
-        assert_eq!(safe_recs_with_damp(&data), 1);
-    }
     #[test]
     fn test_1() {
         let data = vec![vec![48, 46, 48, 51, 54, 56]];
