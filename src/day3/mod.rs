@@ -3,8 +3,9 @@ use std::fs;
 use std::path::PathBuf;
 
 pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
-    let res = parse_input(data)?;
-    write_data((res, 0), out)?;
+    let res = parse_input(&data, false)?;
+    let res2 = parse_input(&data, true)?;
+    write_data((res, res2), out)?;
     Ok(())
 }
 
@@ -13,12 +14,21 @@ fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn parse_input(data: PathBuf) -> Result<u64> {
+fn parse_input(data: &PathBuf, do_enabled: bool) -> Result<u64> {
     let f = fs::read(data)?;
     let pattern = b"mul(";
+    let do_pattern = b"do";
+    let dont_pattern = b"don't";
     let mut tot = 0;
-    for (i, w) in f.windows(4).enumerate() {
-        if w == pattern {
+    let mut last_do = true;
+    for (i, w) in f.windows(5).enumerate() {
+        if &w[..2] == do_pattern {
+            last_do = w != dont_pattern;
+        }
+        if !last_do && do_enabled {
+            continue;
+        }
+        if &w[..4] == pattern {
             let remainder = &f[i + 4..i + 12];
             let mut iter = remainder.split(|item| *item == b',');
             if let (Some(first), Some(second)) = (iter.next(), iter.next()) {
