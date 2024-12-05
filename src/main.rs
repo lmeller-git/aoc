@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 mod day1;
 mod day2;
+mod day3;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -34,6 +35,7 @@ fn main() -> Result<()> {
     match args.day {
         1 => day1::_main(args.data, args.out),
         2 => day2::_main(args.data, args.out),
+        3 => day3::_main(args.data, args.out),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
