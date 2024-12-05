@@ -7,7 +7,9 @@ type Array = Vec<Vec<u8>>;
 pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
     let arr = parse_data(data)?;
     let res = search(&arr);
-    write_data((res, 0), out)?;
+    let res2 = search_x(&arr);
+    println!("part1: {}, part2: {}", res, res2);
+    write_data((res, res2), out)?;
     Ok(())
 }
 
@@ -55,6 +57,29 @@ fn transpose(arr: &Array) -> Array {
 
 fn reverse_rows(arr: &Array) -> Array {
     arr.iter().rev().cloned().collect()
+}
+
+fn search_x(arr: &Array) -> u64 {
+    let pattern1 = b"MAS";
+    let pattern2 = b"SAM";
+    let mut tot = 0;
+    for (k, r) in get_diags(arr).iter().enumerate() {
+        for (o, w) in r.windows(3).enumerate() {
+            if (w == pattern1 || w == pattern2) && analyze_x(k, o, arr) {
+                tot += 1;
+            }
+        }
+    }
+    tot
+}
+
+fn analyze_x(diag: usize, offset: usize, arr: &Array) -> bool {
+    let cols = arr[0].len();
+    let actual_diag = diag as i64 - cols as i64 + 1;
+    let x = (offset as i64 - actual_diag.min(0)) as usize;
+    let y = (offset as i64 + actual_diag.max(0)) as usize;
+    let word = [arr[y + 2][x], arr[y + 1][x + 1], arr[y][x + 2]];
+    word == *b"MAS" || word == *b"SAM"
 }
 
 fn search(arr: &Array) -> u64 {
