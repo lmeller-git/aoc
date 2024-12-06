@@ -1,4 +1,5 @@
 use super::{AOCError, Result};
+use core::panic;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -7,10 +8,10 @@ use std::path::PathBuf;
 
 type Data = Vec<Vec<u64>>;
 
-pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _out: PathBuf) -> Result<()> {
     let (map, records) = parse(data)?;
     let res = get_sorted_sum(&map, &records);
-    println!("{}", res);
+    println!("{}, {}", res.0, res.1);
     Ok(())
 }
 
@@ -20,29 +21,72 @@ struct OrderMap {
     in_degree: HashMap<u64, usize>,
 }
 
-fn get_sorted_sum(map: &OrderMap, recs: &Data) -> u64 {
+fn get_sorted_sum(map: &OrderMap, recs: &Data) -> (u64, u64) {
     let mut tot = 0;
+    let mut tot2 = 0;
     for rec in recs {
         if is_sorted(map, rec) {
             tot += rec[rec.len() / 2];
+        } else {
+            match sort(map, rec) {
+                Ok(res) => tot2 += res[res.len() / 2],
+                Err(AOCError::GenError(_)) => continue,
+                _ => panic!("wtf"),
+            }
         }
     }
-    tot
+    (tot, tot2)
 }
 
-fn is_sorted(map: &OrderMap, rec: &[u64]) -> bool {
+fn sort(map: &OrderMap, rec: &[u64]) -> Result<Vec<u64>> {
+    let mut in_degree = build_in_degree(map, rec);
+    let mut zero_stack = Vec::new();
+    for (node, degree) in in_degree.iter() {
+        if *degree == 0 {
+            zero_stack.push(*node);
+        }
+    }
+    let mut res = Vec::new();
+    while let Some(next) = zero_stack.pop() {
+        res.push(next);
+        for succ in &map.nodes[&next] {
+            in_degree.entry(*succ).and_modify(|succ| *succ -= 1);
+            if let Some(s) = in_degree.get(succ) {
+                if *s == 0 {
+                    zero_stack.push(*succ);
+                }
+            }
+        }
+    }
+    if res.len() != rec.len() {
+        return Err(AOCError::GenError("cyclic graph".into()));
+    }
+
+    Ok(res)
+}
+
+fn build_in_degree(map: &OrderMap, rec: &[u64]) -> HashMap<u64, usize> {
     let mut in_degree: HashMap<u64, usize> = HashMap::new();
     for (k, v) in map.nodes.iter() {
         if !rec.contains(k) {
             continue;
         }
+        in_degree.entry(*k).or_insert(0);
         for n in v {
+            if !rec.contains(n) {
+                continue;
+            }
             in_degree
                 .entry(*n)
                 .and_modify(|entry| *entry += 1)
                 .or_insert(1);
         }
     }
+    in_degree
+}
+
+fn is_sorted(map: &OrderMap, rec: &[u64]) -> bool {
+    let mut in_degree: HashMap<u64, usize> = build_in_degree(map, rec);
     for p in rec {
         if let Some(d) = in_degree.get(p) {
             if *d > 0 {
