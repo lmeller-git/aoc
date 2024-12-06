@@ -1,4 +1,4 @@
-use super::{AOCError, Result};
+use super::Result;
 use std::fs;
 use std::path::PathBuf;
 
