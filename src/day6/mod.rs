@@ -5,14 +5,16 @@ use std::io;
 use std::io::BufRead;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
     let mut field_map = Field::parse(data)?;
-    let loops = field_map.count_loops();
+    let loops = field_map.count_loops(verbosity);
     while field_map.update().is_ok() {
-        //println!("{}", field_map);
+        if verbosity > 1 {
+            println!("{}", field_map);
+        }
     }
     let res = field_map.count_visited();
-    println!("{}, {}", res, loops);
+    println!("part1: {}, part2: {}", res, loops);
     Ok(())
 }
 
@@ -175,14 +177,14 @@ impl Field {
         Ok(())
     }
 
-    fn count_loops(&self) -> u64 {
+    fn count_loops(&self, verbosity: u8) -> u64 {
         let mut n_loops = 0;
         for i in 0..self.field.len() {
             for j in 0..self.field[0].len() {
                 if self.field[i][j] == FieldState::Empty {
                     let mut new_map = self.clone();
                     new_map.field[i][j] = FieldState::Obstacle;
-                    if new_map.is_loop() {
+                    if new_map.is_loop(verbosity) {
                         n_loops += 1;
                     }
                 }
@@ -191,12 +193,14 @@ impl Field {
         n_loops
     }
 
-    fn is_loop(&mut self) -> bool {
+    fn is_loop(&mut self, verbosity: u8) -> bool {
         let mut current_guard = vec![self.guard.clone()];
         while self.update().is_ok() {
             if current_guard.contains(&self.guard) {
-                //println!("true");
-                //println!("{}", self);
+                if verbosity > 2 {
+                    println!("loop found");
+                    println!("{}", self);
+                }
                 return true;
             }
             current_guard.push(self.guard.clone());

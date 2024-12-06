@@ -20,6 +20,9 @@ pub struct Args {
     ///day
     #[arg(long)]
     day: u8,
+    ///verbosity
+    #[arg(long, short, default_value = "1")]
+    verbosity: u8,
 }
 
 pub type Result<T> = std::result::Result<T, AOCError>;
@@ -43,7 +46,7 @@ fn main() -> Result<()> {
         3 => day3::_main(args.data, args.out),
         4 => day4::_main(args.data, args.out),
         5 => day5::_main(args.data, args.out),
-        6 => day6::_main(args.data, args.out),
+        6 => day6::_main(args.data, args.out, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
