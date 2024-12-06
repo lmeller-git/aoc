@@ -7,11 +7,12 @@ use std::path::PathBuf;
 
 pub fn _main(data: PathBuf, _out: PathBuf) -> Result<()> {
     let mut field_map = Field::parse(data)?;
+    let loops = field_map.count_loops();
     while field_map.update().is_ok() {
         //println!("{}", field_map);
     }
     let res = field_map.count_visited();
-    println!("{}", res);
+    println!("{}, {}", res, loops);
     Ok(())
 }
 
@@ -35,7 +36,7 @@ impl Display for FieldState {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 enum GuardState {
     #[default]
     Up,
@@ -49,20 +50,25 @@ impl Display for GuardState {
         match self {
             Self::Up => write!(f, "^")?,
             Self::Down => write!(f, "v")?,
-            Self::Left => write!(f, ">")?,
-            Self::Right => write!(f, "<")?,
+            Self::Left => write!(f, "<")?,
+            Self::Right => write!(f, ">")?,
         }
         Ok(())
     }
 }
 
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+struct GuardInfo {
+    state: GuardState,
+    position: (usize, usize),
+}
+
 type FieldMap = Vec<Vec<FieldState>>;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Field {
     field: FieldMap,
-    guard_pos: (usize, usize),
-    guard_state: GuardState,
+    guard: GuardInfo,
 }
 
 impl Field {
@@ -79,19 +85,19 @@ impl Field {
                         '.' => Ok(FieldState::Empty),
                         '#' => Ok(FieldState::Obstacle),
                         '>' => {
-                            state.guard_state = GuardState::Left;
+                            state.guard.state = GuardState::Left;
                             Ok(FieldState::Visited)
                         }
                         '<' => {
-                            state.guard_state = GuardState::Right;
+                            state.guard.state = GuardState::Right;
                             Ok(FieldState::Visited)
                         }
                         'v' => {
-                            state.guard_state = GuardState::Down;
+                            state.guard.state = GuardState::Down;
                             Ok(FieldState::Visited)
                         }
                         '^' => {
-                            state.guard_state = GuardState::Up;
+                            state.guard.state = GuardState::Up;
                             Ok(FieldState::Visited)
                         }
                         _ => Err(AOCError::ParseError("could not parse line".into())),
@@ -103,7 +109,7 @@ impl Field {
         for (i, row) in state.field.iter().enumerate() {
             for (j, f) in row.iter().enumerate() {
                 if *f == FieldState::Visited {
-                    state.guard_pos = (i, j);
+                    state.guard.position = (i, j);
                     break;
                 }
             }
@@ -112,53 +118,90 @@ impl Field {
     }
 
     fn update(&mut self) -> Result<()> {
-        match self.guard_state {
+        match self.guard.state {
             GuardState::Up => {
-                if self.guard_pos.0 == 0 {
+                if self.guard.position.0 == 0 {
                     return Err(AOCError::SolverError("Guard out of bounds".into()));
                 }
-                if self.field[self.guard_pos.0 - 1][self.guard_pos.1] == FieldState::Obstacle {
-                    self.guard_state = GuardState::Right;
+                if self.field[self.guard.position.0 - 1][self.guard.position.1]
+                    == FieldState::Obstacle
+                {
+                    self.guard.state = GuardState::Right;
                     return Ok(());
                 }
-                self.guard_pos.0 -= 1;
-                self.field[self.guard_pos.0][self.guard_pos.1] = FieldState::Visited;
+                self.guard.position.0 -= 1;
+                self.field[self.guard.position.0][self.guard.position.1] = FieldState::Visited;
             }
             GuardState::Down => {
-                if self.guard_pos.0 == self.field.len() - 1 {
+                if self.guard.position.0 == self.field.len() - 1 {
                     return Err(AOCError::SolverError("Guard out of bounds".into()));
                 }
-                if self.field[self.guard_pos.0 + 1][self.guard_pos.1] == FieldState::Obstacle {
-                    self.guard_state = GuardState::Left;
+                if self.field[self.guard.position.0 + 1][self.guard.position.1]
+                    == FieldState::Obstacle
+                {
+                    self.guard.state = GuardState::Left;
                     return Ok(());
                 }
-                self.guard_pos.0 += 1;
-                self.field[self.guard_pos.0][self.guard_pos.1] = FieldState::Visited;
+                self.guard.position.0 += 1;
+                self.field[self.guard.position.0][self.guard.position.1] = FieldState::Visited;
             }
             GuardState::Left => {
-                if self.guard_pos.1 == 0 {
+                if self.guard.position.1 == 0 {
                     return Err(AOCError::SolverError("Guard out of bounds".into()));
                 }
-                if self.field[self.guard_pos.0][self.guard_pos.1 - 1] == FieldState::Obstacle {
-                    self.guard_state = GuardState::Up;
+                if self.field[self.guard.position.0][self.guard.position.1 - 1]
+                    == FieldState::Obstacle
+                {
+                    self.guard.state = GuardState::Up;
                     return Ok(());
                 }
-                self.guard_pos.1 -= 1;
-                self.field[self.guard_pos.0][self.guard_pos.1] = FieldState::Visited;
+                self.guard.position.1 -= 1;
+                self.field[self.guard.position.0][self.guard.position.1] = FieldState::Visited;
             }
             GuardState::Right => {
-                if self.guard_pos.1 == self.field[0].len() - 1 {
+                if self.guard.position.1 == self.field[0].len() - 1 {
                     return Err(AOCError::SolverError("Guard out of bounds".into()));
                 }
-                if self.field[self.guard_pos.0][self.guard_pos.1 + 1] == FieldState::Obstacle {
-                    self.guard_state = GuardState::Down;
+                if self.field[self.guard.position.0][self.guard.position.1 + 1]
+                    == FieldState::Obstacle
+                {
+                    self.guard.state = GuardState::Down;
                     return Ok(());
                 }
-                self.guard_pos.1 += 1;
-                self.field[self.guard_pos.0][self.guard_pos.1] = FieldState::Visited;
+                self.guard.position.1 += 1;
+                self.field[self.guard.position.0][self.guard.position.1] = FieldState::Visited;
             }
         }
         Ok(())
+    }
+
+    fn count_loops(&self) -> u64 {
+        let mut n_loops = 0;
+        for i in 0..self.field.len() {
+            for j in 0..self.field[0].len() {
+                if self.field[i][j] == FieldState::Empty {
+                    let mut new_map = self.clone();
+                    new_map.field[i][j] = FieldState::Obstacle;
+                    if new_map.is_loop() {
+                        n_loops += 1;
+                    }
+                }
+            }
+        }
+        n_loops
+    }
+
+    fn is_loop(&mut self) -> bool {
+        let mut current_guard = vec![self.guard.clone()];
+        while self.update().is_ok() {
+            if current_guard.contains(&self.guard) {
+                //println!("true");
+                //println!("{}", self);
+                return true;
+            }
+            current_guard.push(self.guard.clone());
+        }
+        false
     }
 
     fn count_visited(&self) -> u64 {
@@ -178,8 +221,8 @@ impl Display for Field {
         for (i, row) in self.field.iter().enumerate() {
             writeln!(f)?;
             for (j, field) in row.iter().enumerate() {
-                if self.guard_pos == (i, j) {
-                    write!(f, "{}", self.guard_state)?;
+                if self.guard.position == (i, j) {
+                    write!(f, "{} ", self.guard.state)?;
                     continue;
                 }
                 write!(f, "{} ", field)?;
