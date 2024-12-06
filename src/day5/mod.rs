@@ -30,7 +30,7 @@ fn get_sorted_sum(map: &OrderMap, recs: &Data) -> (u64, u64) {
         } else {
             match sort(map, rec) {
                 Ok(res) => tot2 += res[res.len() / 2],
-                Err(AOCError::GenError(_)) => continue,
+                Err(AOCError::SolverError(_)) => continue,
                 _ => panic!("wtf"),
             }
         }
@@ -59,7 +59,7 @@ fn sort(map: &OrderMap, rec: &[u64]) -> Result<Vec<u64>> {
         }
     }
     if res.len() != rec.len() {
-        return Err(AOCError::GenError("cyclic graph".into()));
+        return Err(AOCError::SolverError("cyclic graph".into()));
     }
 
     Ok(res)

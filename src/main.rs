@@ -6,6 +6,7 @@ mod day2;
 mod day3;
 mod day4;
 mod day5;
+mod day6;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -30,6 +31,8 @@ pub enum AOCError {
     IOError(#[from] std::io::Error),
     #[error("something unexpected happened {0}")]
     GenError(String),
+    #[error("solver failed with {0}")]
+    SolverError(String),
 }
 
 fn main() -> Result<()> {
@@ -40,6 +43,7 @@ fn main() -> Result<()> {
         3 => day3::_main(args.data, args.out),
         4 => day4::_main(args.data, args.out),
         5 => day5::_main(args.data, args.out),
+        6 => day6::_main(args.data, args.out),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
