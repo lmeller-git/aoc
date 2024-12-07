@@ -4,7 +4,7 @@ use std::{io::Read, path::PathBuf};
 pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
     let eqs = parse(data)?;
     let res = solve(&eqs)?;
-    println!("part1 : {}", res);
+    println!("part1 : {}, part2: {}", res.0, res.1);
     Ok(())
 }
 
@@ -14,32 +14,55 @@ struct Equation {
     data: Vec<u64>,
 }
 
-#[derive(Debug)]
-enum Operation {
-    Add,
-    Multiply,
-}
-
-fn is_solvable(eq: &Equation, current_operand: usize, current_res: u64) -> bool {
+fn is_solvable(eq: &Equation, current_operand: usize, current_res: u64, concat: bool) -> bool {
     if current_operand == eq.data.len() {
         return current_res == eq.res;
+    }
+    if current_res > eq.res {
+        return false;
     }
     is_solvable(
         eq,
         current_operand + 1,
         current_res + eq.data[current_operand],
+        concat,
     ) || is_solvable(
         eq,
         current_operand + 1,
         current_res * eq.data[current_operand],
-    )
+        concat,
+    ) || (concat
+        && is_solvable(
+            eq,
+            current_operand + 1,
+            (current_res
+                * 10_u64.pow((eq.data[current_operand] as f64).log10().floor() as u32 + 1))
+                + eq.data[current_operand],
+            concat,
+        ))
 }
 
-fn solve(eqs: &[Equation]) -> Result<u64> {
-    Ok(eqs
-        .iter()
-        .map(|eq| if is_solvable(eq, 0, 0) { eq.res } else { 0 })
-        .sum())
+fn solve(eqs: &[Equation]) -> Result<(u64, u64)> {
+    Ok((
+        eqs.iter()
+            .map(|eq| {
+                if is_solvable(eq, 0, 0, false) {
+                    eq.res
+                } else {
+                    0
+                }
+            })
+            .sum(),
+        eqs.iter()
+            .map(|eq| {
+                if is_solvable(eq, 0, 0, true) {
+                    eq.res
+                } else {
+                    0
+                }
+            })
+            .sum(),
+    ))
 }
 
 fn parse(data: PathBuf) -> Result<Vec<Equation>> {
