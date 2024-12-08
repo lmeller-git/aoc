@@ -1,12 +1,24 @@
 use super::Result;
+use core::f64;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::io::Read;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
-    let grid = Grid::parse(data)?;
-    let res = grid.get_antinodes();
-    println!("{}", res);
+pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+    let mut grid = Grid::parse(data)?;
+    let res = grid.get_antinodes(false);
+    if verbosity > 2 {
+        println!("part1:");
+        println!("{}\n", grid);
+    }
+    grid.antinodes.clear();
+    let res2 = grid.get_antinodes(true);
+    if verbosity > 2 {
+        println!("part2:");
+        println!("{}\n", grid);
+    }
+    println!("part1: {}, part2: {}", res, res2);
     Ok(())
 }
 
@@ -19,11 +31,15 @@ struct Point {
 impl Point {
     fn is_on_line(&self, line: &Line) -> bool {
         let d = (line.pos.x - self.x) * line.delta.y - (line.pos.y - self.y) * line.delta.x;
-        (0. - f64::EPSILON..0. + f64::EPSILON).contains(&d)
+        (-f64::EPSILON..f64::EPSILON).contains(&d)
     }
 
     fn distance(&self, other: &Point) -> f64 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+
+    fn is_equal(&self, other: &Point) -> bool {
+        (self.x - other.x).abs() <= f64::EPSILON && (self.y - other.y).abs() <= f64::EPSILON
     }
 }
 
@@ -55,6 +71,7 @@ struct Grid {
     antennas: HashMap<char, Vec<Antenna>>,
     cols: usize,
     rows: usize,
+    antinodes: Vec<Point>,
 }
 
 impl Grid {
@@ -91,43 +108,53 @@ impl Grid {
             antennas,
             cols,
             rows,
+            antinodes: Vec::new(),
         })
     }
 
-    fn get_antinodes(&self) -> u32 {
+    fn get_antinodes(&mut self, resonant_harmonics: bool) -> u32 {
         let mut tot = 0;
-        let mut found = false;
         for x in 0..self.rows {
             for y in 0..self.cols {
+                let mut found = false;
                 let p = Point {
                     x: x as f64,
                     y: y as f64,
                 };
                 for antenna_group in &self.antennas {
                     if found {
-                        found = false;
                         break;
                     }
-                    for antenna in antenna_group.1 {
+                    for (i, antenna) in antenna_group.1.iter().enumerate() {
                         if found {
                             break;
                         }
-                        if p == antenna.pos {
+                        if resonant_harmonics
+                            && antenna_group.1.len() > 1
+                            && p.is_equal(&antenna.pos)
+                        {
+                            tot += 1;
+                            found = true;
+                            self.antinodes.push(p.clone());
+                            break;
+                        }
+                        if !resonant_harmonics && p.is_equal(&antenna.pos) {
                             continue;
                         }
                         let line = Line::from_points(&p, &antenna.pos);
                         let d = p.distance(&antenna.pos);
-                        for other_antenna in antenna_group.1 {
-                            if antenna == other_antenna || p == other_antenna.pos {
+                        for other_antenna in antenna_group.1.iter().skip(i + 1) {
+                            if !resonant_harmonics && p.is_equal(&other_antenna.pos) {
                                 continue;
                             }
                             if other_antenna.pos.is_on_line(&line) {
                                 let d2 = p.distance(&other_antenna.pos);
-                                if (0. - f64::EPSILON..0. + f64::EPSILON)
-                                    .contains(&(d2.max(d) - 2. * d2.min(d)))
+                                if resonant_harmonics
+                                    || (d2.max(d) - 2. * d2.min(d)).abs() <= f64::EPSILON
                                 {
                                     found = true;
                                     tot += 1;
+                                    self.antinodes.push(p.clone());
                                     break;
                                 }
                             }
@@ -137,5 +164,27 @@ impl Grid {
             }
         }
         tot
+    }
+}
+
+impl Display for Grid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut v = vec![vec!['.'; self.cols]; self.rows];
+        for p in &self.antinodes {
+            v[p.y as usize][p.x as usize] = '#';
+        }
+        for a in &self.antennas {
+            for a_ in a.1 {
+                v[a_.pos.y as usize][a_.pos.x as usize] = *a.0;
+            }
+        }
+        for r in &v {
+            writeln!(f)?;
+            for c in r {
+                write!(f, "{}", c)?;
+            }
+        }
+
+        Ok(())
     }
 }
