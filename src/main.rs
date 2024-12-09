@@ -9,6 +9,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -51,6 +52,7 @@ fn main() -> Result<()> {
         6 => day6::_main(args.data, args.out, args.verbosity),
         7 => day7::_main(args.data, args.out, args.verbosity),
         8 => day8::_main(args.data, args.out, args.verbosity),
+        9 => day9::_main(args.data, args.out, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
