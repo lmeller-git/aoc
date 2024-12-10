@@ -2,6 +2,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use thiserror::Error;
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -53,6 +54,7 @@ fn main() -> Result<()> {
         7 => day7::_main(args.data, args.out, args.verbosity),
         8 => day8::_main(args.data, args.out, args.verbosity),
         9 => day9::_main(args.data, args.out, args.verbosity),
+        10 => day10::_main(args.data, args.out, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
