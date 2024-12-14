@@ -2,9 +2,11 @@ use super::{AOCError, Result};
 use std::path::PathBuf;
 
 pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
-    let mut claw_machines = parse(data)?;
+    let mut claw_machines = parse(&data, false)?;
     let res = solve(&mut claw_machines);
-    println!("res1: {}", res);
+    let mut claw_machines2 = parse(&data, true)?;
+    let res2 = solve(&mut claw_machines2);
+    println!("res1: {}, res2: {}", res, res2);
     Ok(())
 }
 
@@ -18,8 +20,8 @@ enum SolveCost {
 
 #[derive(Debug, Default, PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 #[derive(Debug, Default, PartialEq, PartialOrd, Ord, Eq)]
@@ -55,15 +57,15 @@ fn get_min(b1: Point, b2: Point, target: Point) -> Option<usize> {
     let xb = (target.y as f64 - b1.y as f64 / b1.x as f64 * target.x as f64)
         / (b2.y as f64 - b1.y as f64 / b1.x as f64 * b2.x as f64);
     let xa = (target.x as f64 - xb * b2.x as f64) / b1.x as f64;
-    let xa = xa.round() as i32;
-    let xb = xb.round() as i32;
+    let xa = xa.round() as i64;
+    let xb = xb.round() as i64;
     if xa < 0 || xb < 0 || (xa * b1.x + xb * b2.x, xa * b1.y + xb * b2.y) != (target.x, target.y) {
         return None;
     }
     Some(3 * xa as usize + xb as usize)
 }
 
-fn parse(data: PathBuf) -> Result<Vec<ClawMachine>> {
+fn parse(data: &PathBuf, part2: bool) -> Result<Vec<ClawMachine>> {
     let f = std::fs::read_to_string(data)?;
     let f = f.lines().collect::<Vec<&str>>();
     f.split(|line| line.is_empty())
@@ -80,13 +82,13 @@ fn parse(data: PathBuf) -> Result<Vec<ClawMachine>> {
                         s.split(',').collect::<Vec<&str>>(),
                     );
                     let dxa = a[0]
-                        .parse::<i32>()
+                        .parse::<i64>()
                         .map_err(|_e| AOCError::ParseError("could not parse dxa".into()))?;
                     let dxb = b[0]
-                        .parse::<i32>()
+                        .parse::<i64>()
                         .map_err(|_e| AOCError::ParseError("could not parse dxb".into()))?;
                     let xs = s[0]
-                        .parse::<i32>()
+                        .parse::<i64>()
                         .map_err(|_e| AOCError::ParseError("could not parse xs".into()))?;
                     if let (Some(a), Some(b), Some(s)) = (a.get(1), b.get(1), s.get(1)) {
                         if let (Some(a), Some(b), Some(s)) = (
@@ -95,16 +97,19 @@ fn parse(data: PathBuf) -> Result<Vec<ClawMachine>> {
                             s.strip_prefix(" Y="),
                         ) {
                             let dya = a
-                                .parse::<i32>()
+                                .parse::<i64>()
                                 .map_err(|_e| AOCError::ParseError("could not parse dya".into()))?;
                             let dyb = b
-                                .parse::<i32>()
+                                .parse::<i64>()
                                 .map_err(|_e| AOCError::ParseError("could not parse dyb".into()))?;
                             let ys = s
-                                .parse::<i32>()
+                                .parse::<i64>()
                                 .map_err(|_e| AOCError::ParseError("could not part ys".into()))?;
                             return Ok(ClawMachine {
-                                prize: Point { x: xs, y: ys },
+                                prize: Point {
+                                    x: if part2 { xs + 10000000000000 } else { xs },
+                                    y: if part2 { ys + 10000000000000 } else { ys },
+                                },
                                 da: Point { x: dxa, y: dya },
                                 db: Point { x: dxb, y: dyb },
                                 solve_cost: SolveCost::Unspecified,
