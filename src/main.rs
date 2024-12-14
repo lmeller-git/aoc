@@ -5,6 +5,7 @@ mod day1;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -59,6 +60,7 @@ fn main() -> Result<()> {
         10 => day10::_main(args.data, args.out, args.verbosity),
         11 => day11::_main(args.data, args.out, args.verbosity),
         12 => day12::_main(args.data, args.out, args.verbosity),
+        13 => day13::_main(args.data, args.out, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
