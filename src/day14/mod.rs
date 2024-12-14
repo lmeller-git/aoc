@@ -11,21 +11,37 @@ const MID_Y: i32 = 51;
 pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     let mut area = Area::parse(data)?;
     let res1 = solve(&mut area, verbosity);
-    println!("res1: {}", res1);
+    println!("res1: {}, res2: {}", res1.0, res1.1);
     Ok(())
 }
 
-fn solve(robots: &mut Area, verbosity: u8) -> usize {
+fn solve(robots: &mut Area, verbosity: u8) -> (usize, usize) {
     if verbosity > 2 {
         println!("{robots}");
     }
-    for _ in 0..100 {
+    let mut tree_idx = 0;
+    let mut safety = 0;
+    for i in 0..100000 {
+        if verbosity > 1 && robots.is_c_tree() {
+            println!("{i}");
+            println!("{robots}");
+            if tree_idx == 0 {
+                tree_idx = i;
+            }
+            if i > 99 {
+                break;
+            }
+        }
         robots.step();
+        if i == 99 {
+            safety = robots.safety_factor();
+        }
         if verbosity > 2 {
+            println!("{i}");
             println!("{robots}");
         }
     }
-    robots.safety_factor()
+    (safety, tree_idx)
 }
 
 #[derive(Default, Debug, PartialEq, PartialOrd, Ord, Eq, Clone, Hash, Copy)]
@@ -143,6 +159,36 @@ impl Area {
             }
         }
         q1 * q2 * q3 * q4
+    }
+
+    fn is_c_tree(&self) -> bool {
+        let w_size_y = (MAX_Y - MIN_Y) / 10;
+        let w_size_x = (MAX_X - MIN_X) / 10;
+        let t = ((w_size_x * w_size_y) as f64 * 0.8) as usize;
+        for y in MIN_Y..=MAX_Y / 10 {
+            for x in MIN_X..=MAX_X / 10 {
+                //calculate density around the point in a nxm window. if it exceeds some threshold, a tree is likely found
+                let p0 = Point {
+                    x: x * 10,
+                    y: y * 10,
+                };
+                let mut n_robots = 0;
+                for dx in 0..w_size_x {
+                    for dy in 0..w_size_y {
+                        if let Some(robots) = self.robots.get(&Point {
+                            x: p0.x + dx,
+                            y: p0.y + dy,
+                        }) {
+                            n_robots += robots.len();
+                        }
+                    }
+                }
+                if n_robots >= t {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
