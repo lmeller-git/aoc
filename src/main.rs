@@ -8,6 +8,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day16;
 mod day2;
 mod day3;
 mod day4;
@@ -16,7 +17,6 @@ mod day6;
 mod day7;
 mod day8;
 mod day9;
-
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
@@ -65,6 +65,7 @@ fn main() -> Result<()> {
         13 => day13::_main(args.data, args.out, args.verbosity),
         14 => day14::_main(args.data, args.verbosity),
         15 => day15::_main(args.data, args.verbosity),
+        16 => day16::_main(args.data, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
