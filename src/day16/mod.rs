@@ -1,5 +1,6 @@
 use super::{AOCError, Result};
 use std::{
+    cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
     fmt::Display,
     fs,
@@ -13,8 +14,71 @@ pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
         println!("{}", maze);
     }
     let res1 = astar(&maze);
-    println!("res1: {}", res1);
+    let res2 = astar_2(&maze);
+    println!("res1: {}, res2: {}", res1, res2);
     Ok(())
+}
+
+fn astar_2(maze: &Maze) -> usize {
+    let mut queue: BinaryHeap<Reindeer> = BinaryHeap::new();
+    let mut start = maze.start.clone();
+    start.visited.insert(start.position);
+    queue.push(start);
+    let mut visited: HashMap<(Point, Direction), u32> = HashMap::new();
+    let mut best_paths: Vec<Reindeer> = Vec::new();
+    let mut min_cost: Option<u32> = None;
+
+    while let Some(next_state) = queue.pop() {
+        if maze.is_solved(&next_state) {
+            if let Some(cost) = min_cost {
+                match next_state.g_cost.cmp(&cost) {
+                    Ordering::Less => {
+                        best_paths.clear();
+                        min_cost = Some(next_state.g_cost);
+                        best_paths.push(next_state);
+                    }
+                    Ordering::Equal => {
+                        best_paths.push(next_state);
+                    }
+                    _ => {}
+                }
+            } else {
+                min_cost = Some(next_state.g_cost);
+                best_paths.push(next_state);
+            }
+            continue;
+        }
+
+        if let Some(min_cost) = min_cost {
+            if next_state.g_cost > min_cost {
+                continue;
+            }
+        }
+        if let Some(old_cost) = visited.get(&(next_state.position, next_state.direction)) {
+            if *old_cost < next_state.g_cost {
+                continue;
+            }
+        }
+        visited.insert(
+            (next_state.position, next_state.direction),
+            next_state.g_cost,
+        );
+        if let Some(r1) = rotate(maze, &next_state, Rotation::Clockwise) {
+            queue.push(r1);
+        }
+        if let Some(r2) = rotate(maze, &next_state, Rotation::Counterclockwise) {
+            queue.push(r2);
+        }
+        if let Some(mut w) = walk(maze, &next_state) {
+            w.visited.insert(w.position);
+            queue.push(w);
+        }
+    }
+    let mut all_visited = HashSet::new();
+    for p in best_paths {
+        all_visited.extend(p.visited);
+    }
+    all_visited.len()
 }
 
 fn astar(maze: &Maze) -> u32 {
@@ -63,6 +127,7 @@ fn rotate(maze: &Maze, reindeer: &Reindeer, rot: Rotation) -> Option<Reindeer> {
             g_cost: reindeer.g_cost + 1000,
             h_cost: 0,
             last_move: Move::Rot,
+            visited: reindeer.visited.clone(),
         },
 
         Rotation::Counterclockwise => Reindeer {
@@ -76,6 +141,7 @@ fn rotate(maze: &Maze, reindeer: &Reindeer, rot: Rotation) -> Option<Reindeer> {
             g_cost: reindeer.g_cost + 1000,
             h_cost: 0,
             last_move: Move::Rot,
+            visited: reindeer.visited.clone(),
         },
     };
     r.h_cost = maze.get_cost(&r);
@@ -93,6 +159,7 @@ fn walk(maze: &Maze, reindeer: &Reindeer) -> Option<Reindeer> {
         g_cost: reindeer.g_cost + 1,
         h_cost: 0,
         last_move: Move::Walk,
+        visited: reindeer.visited.clone(),
     };
     r.h_cost = maze.get_cost(&r);
     Some(r)
@@ -167,6 +234,7 @@ struct Reindeer {
     g_cost: u32,
     h_cost: u32,
     last_move: Move,
+    visited: HashSet<Point>,
 }
 
 impl Ord for Reindeer {
