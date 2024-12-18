@@ -21,7 +21,140 @@ pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
         }
     }
     cpu.flush();
+    cpu.reset();
+    //let res2 = get_a(&mut cpu, &stack);
+    let res2 = get_a(&mut cpu, &stack);
+    println!("res2: {}", res2);
     Ok(())
+}
+
+fn get_a(cpu: &mut Cpu, stack: &Stack) -> u64 {
+    let mut current_a = 0;
+    let mut current_target = stack.len() * 2;
+    while current_target < usize::MAX {
+        cpu.reset();
+        cpu.register_a = current_a;
+        loop {
+            let next_ins = cpu.fetch_op(stack);
+            if next_ins == Instruction::halt {
+                break;
+            }
+            cpu.execute_op(next_ins);
+        }
+        if cpu.out_buf.len() < stack.len() * 2 {
+            current_a *= 2;
+            continue;
+        }
+        match stack[current_target / 2] {
+            Instruction::adv(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 0 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::bxl(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 1 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::bst(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 2 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::jnz(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 3 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::bxc(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 4 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::out(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 5 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::bdv(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 6 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::cdv(v) => {
+                if current_target % 2 == 0 {
+                    if cpu.out_buf[current_target] == 7 {
+                        current_a *= 8;
+                        current_target -= 1;
+                        continue;
+                    }
+                } else if cpu.out_buf[current_target] == v as u64 {
+                    current_a *= 8;
+                    current_target -= 1;
+                    continue;
+                }
+            }
+            Instruction::halt => {}
+        }
+        current_a += 1;
+    }
+    current_a
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Debug)]
@@ -46,6 +179,7 @@ struct Cpu {
     register_b: u64,
     register_c: u64,
     out_buf: Vec<u64>,
+    original_a: u64,
 }
 
 impl Cpu {
@@ -111,6 +245,7 @@ impl Cpu {
     }
 
     fn flush(&mut self) {
+        self.out_buf.clear();
         if self.out_buf.is_empty() {
             return;
         }
@@ -121,6 +256,14 @@ impl Cpu {
         }
         print!("{}", self.out_buf[self.out_buf.len() - 1]);
         self.out_buf.clear();
+    }
+
+    fn reset(&mut self) {
+        self.stack_pointer = 0;
+        self.flush();
+        self.register_b = 0;
+        self.register_c = 0;
+        self.register_a = self.original_a;
     }
 }
 
@@ -189,6 +332,7 @@ fn parse(data: PathBuf) -> Result<(Cpu, Stack)> {
                 s.push(instruction);
             }
         }
+        cpu.original_a = cpu.register_a;
         return Ok((cpu, s));
     }
     Err(AOCError::ParseError("could not parse input".into()))
