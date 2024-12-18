@@ -1,6 +1,7 @@
 use super::{AOCError, Result};
 use std::{
     collections::{BinaryHeap, HashMap, HashSet},
+    fmt::Display,
     fs,
     ops::Add,
     path::PathBuf,
@@ -16,9 +17,10 @@ pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
         print_grid(&grid, &State::default());
         println!();
     }
-    let res = astar(&grid, verbosity);
+    let res = astar(&grid, verbosity, BYTES);
+    let res2 = part2(&grid, verbosity);
     println!();
-    println!("res1: {}", res);
+    println!("res1: {}, res2: {}", res, res2);
     Ok(())
 }
 
@@ -35,6 +37,12 @@ impl Add for Point {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
         }
+    }
+}
+
+impl Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{},{}", self.x, self.y)
     }
 }
 
@@ -61,7 +69,23 @@ impl PartialOrd for State {
     }
 }
 
-fn astar(grid: &Grid, verbosity: u8) -> u32 {
+fn part2(grid: &Grid, verbosity: u8) -> Point {
+    let mut bytes = grid.len() as u32 - 1;
+    while bytes > 0 {
+        if astar(grid, verbosity, bytes) != 0 {
+            break;
+        }
+        bytes -= 1;
+    }
+    for (k, v) in grid {
+        if *v == bytes {
+            return *k;
+        }
+    }
+    Point { x: 0, y: 0 }
+}
+
+fn astar(grid: &Grid, verbosity: u8, bytes: u32) -> u32 {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     queue.push(State {
         pos: Point { x: 0, y: 0 },
@@ -88,16 +112,16 @@ fn astar(grid: &Grid, verbosity: u8) -> u32 {
             .entry(next.pos)
             .and_modify(|e| *e = next.g_cost + next.h_cost)
             .or_insert(next.g_cost + next.h_cost);
-        if let Some(next_s) = next_up(&next, grid) {
+        if let Some(next_s) = next_up(&next, grid, bytes) {
             queue.push(next_s);
         }
-        if let Some(next_s) = next_down(&next, grid) {
+        if let Some(next_s) = next_down(&next, grid, bytes) {
             queue.push(next_s);
         }
-        if let Some(next_s) = next_left(&next, grid) {
+        if let Some(next_s) = next_left(&next, grid, bytes) {
             queue.push(next_s);
         }
-        if let Some(next_s) = next_right(&next, grid) {
+        if let Some(next_s) = next_right(&next, grid, bytes) {
             queue.push(next_s);
         }
     }
@@ -105,7 +129,7 @@ fn astar(grid: &Grid, verbosity: u8) -> u32 {
     0
 }
 
-fn next_up(state: &State, grid: &Grid) -> Option<State> {
+fn next_up(state: &State, grid: &Grid, bytes: u32) -> Option<State> {
     if state.pos.y == 0 {
         return None;
     }
@@ -115,7 +139,7 @@ fn next_up(state: &State, grid: &Grid) -> Option<State> {
         return None;
     }
     if let Some(byte) = grid.get(&(state.pos + up)) {
-        if *byte < BYTES {
+        if *byte < bytes {
             return None;
         }
     }
@@ -130,7 +154,7 @@ fn next_up(state: &State, grid: &Grid) -> Option<State> {
     })
 }
 
-fn next_down(state: &State, grid: &Grid) -> Option<State> {
+fn next_down(state: &State, grid: &Grid, bytes: u32) -> Option<State> {
     if state.pos.y == YBOUNDS {
         return None;
     }
@@ -140,7 +164,7 @@ fn next_down(state: &State, grid: &Grid) -> Option<State> {
         return None;
     }
     if let Some(byte) = grid.get(&(state.pos + down)) {
-        if *byte < BYTES {
+        if *byte < bytes {
             return None;
         }
     }
@@ -154,7 +178,7 @@ fn next_down(state: &State, grid: &Grid) -> Option<State> {
         visited: next,
     })
 }
-fn next_right(state: &State, grid: &Grid) -> Option<State> {
+fn next_right(state: &State, grid: &Grid, bytes: u32) -> Option<State> {
     if state.pos.x == XBOUNDS {
         return None;
     }
@@ -164,7 +188,7 @@ fn next_right(state: &State, grid: &Grid) -> Option<State> {
         return None;
     }
     if let Some(byte) = grid.get(&(state.pos + right)) {
-        if *byte < BYTES {
+        if *byte < bytes {
             return None;
         }
     }
@@ -178,7 +202,7 @@ fn next_right(state: &State, grid: &Grid) -> Option<State> {
         visited: next,
     })
 }
-fn next_left(state: &State, grid: &Grid) -> Option<State> {
+fn next_left(state: &State, grid: &Grid, bytes: u32) -> Option<State> {
     if state.pos.x == 0 {
         return None;
     }
@@ -188,7 +212,7 @@ fn next_left(state: &State, grid: &Grid) -> Option<State> {
         return None;
     }
     if let Some(byte) = grid.get(&(state.pos + left)) {
-        if *byte < BYTES {
+        if *byte < bytes {
             return None;
         }
     }
