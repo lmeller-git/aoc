@@ -28,12 +28,61 @@ pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     Ok(())
 }
 
+fn prog_from_ins(stack: &Stack) -> Vec<u64> {
+    let mut prog = Vec::with_capacity(stack.len() * 2);
+    for ins in stack {
+        match ins {
+            Instruction::adv(v) => {
+                prog.push(0);
+                prog.push(*v as u64);
+            }
+            Instruction::bxl(v) => {
+                prog.push(1);
+                prog.push(*v as u64);
+            }
+            Instruction::bst(v) => {
+                prog.push(2);
+                prog.push(*v as u64);
+            }
+            Instruction::jnz(v) => {
+                prog.push(3);
+                prog.push(*v as u64);
+            }
+            Instruction::bxc(v) => {
+                prog.push(4);
+                prog.push(*v as u64);
+            }
+            Instruction::out(v) => {
+                prog.push(5);
+                prog.push(*v as u64);
+            }
+            Instruction::bdv(v) => {
+                prog.push(6);
+                prog.push(*v as u64);
+            }
+            Instruction::cdv(v) => {
+                prog.push(7);
+                prog.push(*v as u64);
+            }
+            Instruction::halt => {}
+        }
+    }
+    prog
+}
+
 fn get_a(cpu: &mut Cpu, stack: &Stack) -> u64 {
-    let mut current_a = 0;
-    let mut current_target = stack.len() * 2;
-    while current_target < usize::MAX {
+    loop {
+        let next_ins = cpu.fetch_op(stack);
+        if next_ins == Instruction::halt {
+            break;
+        }
+        cpu.execute_op(next_ins);
+    }
+    let prog = prog_from_ins(stack);
+    let mut a = 1;
+    loop {
         cpu.reset();
-        cpu.register_a = current_a;
+        cpu.register_a = a;
         loop {
             let next_ins = cpu.fetch_op(stack);
             if next_ins == Instruction::halt {
@@ -41,120 +90,34 @@ fn get_a(cpu: &mut Cpu, stack: &Stack) -> u64 {
             }
             cpu.execute_op(next_ins);
         }
-        if cpu.out_buf.len() < stack.len() * 2 {
-            current_a *= 2;
-            continue;
+        if cpu.out_buf.len() < prog.len() {
+            a *= 2;
+        } else {
+            break;
         }
-        match stack[current_target / 2] {
-            Instruction::adv(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 0 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::bxl(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 1 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::bst(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 2 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::jnz(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 3 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::bxc(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 4 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::out(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 5 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::bdv(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 6 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::cdv(v) => {
-                if current_target % 2 == 0 {
-                    if cpu.out_buf[current_target] == 7 {
-                        current_a *= 8;
-                        current_target -= 1;
-                        continue;
-                    }
-                } else if cpu.out_buf[current_target] == v as u64 {
-                    current_a *= 8;
-                    current_target -= 1;
-                    continue;
-                }
-            }
-            Instruction::halt => {}
-        }
-        current_a += 1;
     }
-    current_a
+    println!("{}", a);
+    for i in 1..=prog.len() {
+        loop {
+            cpu.reset();
+            cpu.register_a = a;
+            loop {
+                let next_ins = cpu.fetch_op(stack);
+                if next_ins == Instruction::halt {
+                    break;
+                }
+                cpu.execute_op(next_ins);
+            }
+            //println!("o: {:#?}", &prog[..=i]);
+            //println!("b: {:#?}", cpu.out_buf);
+            //break;
+            if prog[prog.len() - i..] == cpu.out_buf {
+                break;
+            }
+            a += 1;
+        }
+    }
+    a / 2
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Debug)]
