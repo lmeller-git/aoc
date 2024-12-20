@@ -9,13 +9,14 @@ use super::Result;
 
 pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let grid = Grid::parse(data)?;
-    let res1 = solve_iter(&grid);
+    //let res1 = solve_iter(&grid);
+    let res1 = solve(&grid);
     println!("res1: {}", res1);
     Ok(())
 }
 
 fn solve_iter(grid: &Grid) -> usize {
-    let worst_cheat = 100;
+    let worst_cheat = 20;
     let mut cheats: HashSet<Point> = HashSet::new();
     let baseline = solve_nocheat(grid);
     for wall in grid.walls.iter() {
@@ -61,61 +62,60 @@ fn cheated_grid(grid: &Grid, wall: &Point) -> Option<Grid> {
     }
     None
 }
-/*
+
 fn solve(grid: &Grid) -> usize {
     let no_cheat_length = solve_nocheat(grid);
     println!("n: {}", no_cheat_length);
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     queue.push(State {
         g_cost: 0,
-        cheat: None,
+        cheat: Cheat::default(),
         current: grid.start,
         h_cost: grid.get_cost(&grid.start),
+        cheat_time: 0,
     });
     let mut visited: HashMap<Point, i32> = HashMap::new();
-    let mut cheats: HashSet<Vec<Point>> = HashSet::new();
+    let mut cheats: HashSet<Cheat> = HashSet::new();
     let mut cheated_states: HashSet<State> = HashSet::new();
-    let best_cheat_times = 100;
+    let best_cheat_times = 64;
     while let Some(next) = queue.pop() {
         if next.current == grid.end {
             println!("{}", cheats.len());
             if next.g_cost + best_cheat_times > no_cheat_length {
                 break;
             }
-            if let Some(cheat) = next.cheat.clone() {
-                cheats.insert(cheat.clone());
-                cheated_states.insert(next);
-                println!("{:#?}", cheats);
-            }
+            cheats.insert(next.cheat.clone());
+            cheated_states.insert(next);
+            //println!("{:#?}", cheats);
+
             continue;
-        }
-        if let Some(cheat) = &next.cheat {
-            if cheat.len() == 1 && cheats.contains(cheat) {
-                continue;
-            }
         }
         if let Some(old) = visited.get(&next.current) {
             if *old + best_cheat_times < next.g_cost {
                 continue;
             }
         }
+        if cheats.contains(&next.cheat) {
+            continue;
+        }
         visited.insert(next.current, next.g_cost);
         for s in next_p(&next, grid, true) {
             queue.push(s);
         }
     }
-    println!("{:#?}", cheats);
-    println!("{:#?}", cheated_states);
+    //println!("{:#?}", cheats);
+    //println!("{:#?}", cheated_states);
     cheats.len()
-}*/
+}
 
 fn solve_nocheat(grid: &Grid) -> i32 {
     let mut queue: BinaryHeap<State> = BinaryHeap::new();
     queue.push(State {
         g_cost: 0,
-        cheat: None,
+        cheat: Cheat::default(),
         current: grid.start,
         h_cost: grid.get_cost(&grid.start),
+        cheat_time: 0,
     });
     let mut visited: HashMap<Point, i32> = HashMap::new();
     while let Some(next) = queue.pop() {
@@ -146,32 +146,56 @@ fn next_p(current: &State, grid: &Grid, cheat: bool) -> Vec<State> {
         let next_point = current.current + delta;
         let is_wall = grid.walls.contains(&next_point);
         if is_wall && cheat {
-            if let Some(old_cheat) = &current.cheat {
-                // num picoseconds = 1, as you can pass only one wall?
-                if old_cheat.len() == 1 || old_cheat[0] != current.current {
-                    continue;
-                }
-                let mut next_cheat = old_cheat.clone();
-                next_cheat.push(next_point);
+            if current.cheat_time >= 19 {
+                continue;
+            }
+            if current.cheat_time == 0 {
+                let cheat = Cheat {
+                    start: Some(next_point),
+                    end: None,
+                };
                 next_states.push(State {
                     h_cost: grid.get_cost(&next_point),
-                    current: next_point,
-                    cheat: Some(next_cheat),
                     g_cost: current.g_cost + 1,
+                    cheat,
+                    current: next_point,
+                    cheat_time: 1,
                 });
             } else {
+                let cheat = if current.cheat.end.is_none() {
+                    current.cheat.clone()
+                } else {
+                    Cheat {
+                        start: current.cheat.start,
+                        end: None,
+                    }
+                };
                 next_states.push(State {
-                    g_cost: current.g_cost + 1,
                     h_cost: grid.get_cost(&next_point),
-                    cheat: Some(vec![next_point]),
+                    g_cost: current.g_cost + 1,
+                    cheat,
                     current: next_point,
+                    cheat_time: current.cheat_time + 1,
                 });
             }
         } else if !is_wall {
+            let next_cheat = if current.cheat.start.is_some() && current.cheat.end.is_none() {
+                Cheat {
+                    start: current.cheat.start,
+                    end: Some(next_point),
+                }
+            } else {
+                current.cheat.clone()
+            };
             next_states.push(State {
+                cheat_time: if current.cheat_time == 20 || current.cheat_time == 0 {
+                    current.cheat_time
+                } else {
+                    current.cheat_time + 1
+                },
                 g_cost: current.g_cost + 1,
                 h_cost: grid.get_cost(&next_point),
-                cheat: current.cheat.clone(),
+                cheat: next_cheat,
                 current: next_point,
             });
         }
@@ -205,12 +229,19 @@ impl Add for Point {
     }
 }
 
+#[derive(Default, Debug, Hash, PartialEq, PartialOrd, Ord, Eq, Clone)]
+struct Cheat {
+    start: Option<Point>,
+    end: Option<Point>,
+}
+
 #[derive(Default, Debug, PartialEq, Eq, Hash)]
 struct State {
     h_cost: i32,
     g_cost: i32,
-    cheat: Option<Vec<Point>>,
+    cheat: Cheat,
     current: Point,
+    cheat_time: u8,
 }
 
 impl Ord for State {
