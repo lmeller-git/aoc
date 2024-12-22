@@ -27,12 +27,8 @@ fn best_sequence(nums: &Vec<u64>) -> i64 {
         }
     }
     let mut max = i64::MIN;
-    let mut best_changes = [0, 0, 0, 0];
-    for (k, v) in all_changes {
-        if v > max {
-            max = v;
-            best_changes = k;
-        }
+    for v in all_changes.values() {
+        max = max.max(*v);
     }
     max
 }
