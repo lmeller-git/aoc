@@ -1,12 +1,12 @@
-use std::{fs, path::PathBuf};
-
-// build tree for each pattern. if a tree does not terminate, it is impossible
 use super::{AOCError, Result};
+use std::{fs, path::PathBuf, sync::Arc, thread};
 
 pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let (avail, designs) = parse(data)?;
     let res1 = n_valid(&avail, &designs);
-    println!("res1: {}", res1);
+    println!("r1: {}", res1);
+    let res2 = n_patterns(avail, &designs);
+    println!("res1: {}, res2: {}", res1, res2);
     Ok(())
 }
 
@@ -17,7 +17,46 @@ fn n_valid(avail: &TowelStack, patterns: &TowelStack) -> usize {
         .sum()
 }
 
-// DFS for valid pattern
+fn n_patterns(avail: TowelStack, patterns: &TowelStack) -> usize {
+    let n_threads = 13;
+    let avail = Arc::new(avail);
+    let chunks = patterns
+        .chunks(patterns.len() / n_threads)
+        .map(|chunk| Arc::new(chunk.to_vec()));
+    let mut handles = Vec::new();
+    for chunk in chunks {
+        let chunk = Arc::new(chunk);
+        let avail = Arc::clone(&avail);
+        handles.push(thread::spawn(move || {
+            chunk
+                .iter()
+                .map(|p| get_valid_patterns(avail.clone(), p, 0))
+                .sum::<usize>()
+        }))
+    }
+    let mut tot = 0;
+    for h in handles {
+        tot += h.join().unwrap();
+    }
+    tot
+}
+
+fn get_valid_patterns(avail: Arc<TowelStack>, pattern: &Towel, current_stripe: usize) -> usize {
+    if current_stripe == pattern.len() {
+        return 1;
+    }
+    let mut tot = 0;
+    for a in avail.iter() {
+        if a.len() + current_stripe > pattern.len() {
+            continue;
+        }
+        if pattern[current_stripe..current_stripe + a.len()] == a[..] {
+            tot += get_valid_patterns(avail.clone(), pattern, current_stripe + a.len());
+        }
+    }
+    tot
+}
+
 fn is_valid_pattern(avail: &TowelStack, pattern: &Towel, current_stripe: usize) -> bool {
     if current_stripe == pattern.len() {
         return true;

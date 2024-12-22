@@ -15,12 +15,12 @@ pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     Ok(())
 }
 
-fn solve_iter(grid: &Grid) -> usize {
+fn _solve_iter(grid: &Grid) -> usize {
     let worst_cheat = 20;
     let mut cheats: HashSet<Point> = HashSet::new();
     let baseline = solve_nocheat(grid);
     for wall in grid.walls.iter() {
-        if let Some(new_grid) = cheated_grid(grid, wall) {
+        if let Some(new_grid) = _cheated_grid(grid, wall) {
             if solve_nocheat(&new_grid) + worst_cheat <= baseline {
                 cheats.insert(*wall);
             }
@@ -29,7 +29,7 @@ fn solve_iter(grid: &Grid) -> usize {
     cheats.len()
 }
 
-fn cheated_grid(grid: &Grid, wall: &Point) -> Option<Grid> {
+fn _cheated_grid(grid: &Grid, wall: &Point) -> Option<Grid> {
     let mut is_viable = false;
     for delta in [
         Point { x: -1, y: 0 },
