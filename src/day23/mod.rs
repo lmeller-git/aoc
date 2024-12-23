@@ -9,8 +9,42 @@ use super::{AOCError, Result};
 pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let computers = parse(data)?;
     let res1 = get_clusters(&computers);
+    let res2 = get_largest_cluster(&computers);
     println!("res1: {}", res1);
+    println!("res2: ");
+    print!("{}", res2[0]);
+    for c in &res2[1..] {
+        print!(",{}", c);
+    }
     Ok(())
+}
+
+fn get_largest_cluster(computers: &HashMap<String, HashSet<String>>) -> Vec<String> {
+    // this sometimes returns a wrong cluster (likely due to a "bad" starting cluster). TODO fix this shit
+    let mut clusters: Vec<HashSet<String>> = Vec::new();
+    for (k, v) in computers {
+        let mut is_in_cluster = false;
+        for cluster in clusters.iter_mut() {
+            if v.is_superset(cluster) {
+                cluster.insert(k.clone());
+                is_in_cluster = true;
+            }
+        }
+        if !is_in_cluster {
+            clusters.push(HashSet::from([k.clone()]));
+        }
+    }
+    let mut current_max = usize::MIN;
+    let mut current_largest = HashSet::new();
+    for cluster in clusters.into_iter() {
+        if cluster.len() > current_max {
+            current_max = cluster.len();
+            current_largest = cluster;
+        }
+    }
+    let mut l = current_largest.into_iter().collect::<Vec<String>>();
+    l.sort();
+    l
 }
 
 fn get_clusters(computers: &HashMap<String, HashSet<String>>) -> usize {
