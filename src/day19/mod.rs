@@ -21,7 +21,7 @@ fn n_patterns(avail: TowelStack, patterns: &TowelStack) -> usize {
     let n_threads = 13;
     let avail = Arc::new(avail);
     let chunks = patterns
-        .chunks(patterns.len() / n_threads)
+        .chunks((patterns.len() / n_threads).max(1))
         .map(|chunk| Arc::new(chunk.to_vec()));
     let mut handles = Vec::new();
     for chunk in chunks {
