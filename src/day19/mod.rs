@@ -1,11 +1,11 @@
 use super::{AOCError, Result};
-use std::{fs, path::PathBuf, sync::Arc, thread};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let (avail, designs) = parse(data)?;
     let res1 = n_valid(&avail, &designs);
     println!("r1: {}", res1);
-    let res2 = n_patterns(avail, &designs);
+    let res2 = num_patterns(&avail, &designs);
     println!("res1: {}, res2: {}", res1, res2);
     Ok(())
 }
@@ -17,43 +17,41 @@ fn n_valid(avail: &TowelStack, patterns: &TowelStack) -> usize {
         .sum()
 }
 
-fn n_patterns(avail: TowelStack, patterns: &TowelStack) -> usize {
-    let n_threads = 13;
-    let avail = Arc::new(avail);
-    let chunks = patterns
-        .chunks((patterns.len() / n_threads).max(1))
-        .map(|chunk| Arc::new(chunk.to_vec()));
-    let mut handles = Vec::new();
-    for chunk in chunks {
-        let chunk = Arc::new(chunk);
-        let avail = Arc::clone(&avail);
-        handles.push(thread::spawn(move || {
-            chunk
-                .iter()
-                .map(|p| get_valid_patterns(avail.clone(), p, 0))
-                .sum::<usize>()
-        }))
-    }
+fn num_patterns(avail: &TowelStack, patterns: &TowelStack) -> usize {
+    let mut stored: HashMap<(usize, Towel), usize> = HashMap::new();
     let mut tot = 0;
-    for h in handles {
-        tot += h.join().unwrap();
+    for towel in patterns.iter() {
+        tot += get_valid_patterns(avail, towel, 0, &mut stored);
     }
+
     tot
 }
 
-fn get_valid_patterns(avail: Arc<TowelStack>, pattern: &Towel, current_stripe: usize) -> usize {
+fn get_valid_patterns(
+    avail: &TowelStack,
+    pattern: &Towel,
+    current_stripe: usize,
+    stored_patterns: &mut HashMap<(usize, Towel), usize>,
+) -> usize {
     if current_stripe == pattern.len() {
         return 1;
     }
+    let key = (current_stripe, pattern[current_stripe..].to_vec());
+    if let Some(&cached_result) = stored_patterns.get(&key) {
+        return cached_result;
+    }
+
     let mut tot = 0;
     for a in avail.iter() {
         if a.len() + current_stripe > pattern.len() {
             continue;
         }
         if pattern[current_stripe..current_stripe + a.len()] == a[..] {
-            tot += get_valid_patterns(avail.clone(), pattern, current_stripe + a.len());
+            tot += get_valid_patterns(avail, pattern, current_stripe + a.len(), stored_patterns);
         }
     }
+
+    stored_patterns.insert(key, tot);
     tot
 }
 
@@ -74,7 +72,7 @@ fn is_valid_pattern(avail: &TowelStack, pattern: &Towel, current_stripe: usize) 
     false
 }
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Debug, Clone, Hash)]
 enum Stripe {
     White,
     Blue,
