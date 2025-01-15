@@ -34,7 +34,7 @@ pub struct Args {
     #[arg(long)]
     data: PathBuf,
     //out
-    #[arg(long, default_value = "out/res.txt")]
+    #[arg(long, default_value = "res.txt")]
     out: PathBuf,
     ///day
     #[arg(long)]
