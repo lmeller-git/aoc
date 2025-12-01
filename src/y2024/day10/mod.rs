@@ -4,7 +4,7 @@ use std::{collections::HashSet, path::PathBuf};
 type HeightMap = Vec<Vec<u8>>;
 type Position = (usize, usize);
 
-pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     let height_map = parse(data)?;
     if verbosity > 2 {
         print_heightmap(&height_map);

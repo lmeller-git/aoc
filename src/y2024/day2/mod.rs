@@ -4,11 +4,11 @@ use std::path::PathBuf;
 
 type Array = Vec<Vec<u64>>;
 
-pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let data = load_data(data)?;
     let res1 = safe_recs(&data);
     let res2 = safe_recs_with_damp(&data);
-    write_data((res1, res2), out)?;
+    println!("res1: {}, res2: {}", res1, res2);
     Ok(())
 }
 
@@ -84,11 +84,6 @@ fn load_data(data: PathBuf) -> Result<Array> {
         lines.push(l);
     }
     Ok(lines)
-}
-
-fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
-    std::fs::write(out, format!("{}, {}", data.0, data.1))?;
-    Ok(())
 }
 
 #[cfg(test)]

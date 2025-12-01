@@ -1,7 +1,7 @@
 use super::Result;
 use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
-pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     let mut garden = parse(data)?;
     let (res1, res2) = solve(&mut garden, verbosity);
     println!("res1: {}, res2: {}", res1, res2);

@@ -2,7 +2,7 @@ use super::{AOCError, Result};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let stones2 = parse_hash(&data)?;
     let res2 = solve_efficient(stones2, 75);
     let stones = parse_hash(&data)?;

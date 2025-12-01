@@ -2,15 +2,10 @@ use super::{AOCError, Result};
 use std::fs;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let res = parse_input(&data, false)?;
     let res2 = parse_input(&data, true)?;
-    write_data((res, res2), out)?;
-    Ok(())
-}
-
-fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
-    std::fs::write(out, format!("{}, {}", data.0, data.1))?;
+    println!("res1: {res}, res2: {res2}");
     Ok(())
 }
 

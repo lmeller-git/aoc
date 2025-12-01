@@ -5,7 +5,7 @@ use std::io;
 use std::io::BufRead;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     let mut field_map = Field::parse(data)?;
     let loops = field_map.count_loops(verbosity);
     while field_map.update().is_ok() {

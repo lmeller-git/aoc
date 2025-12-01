@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::io::Read;
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     let mut grid = Grid::parse(data)?;
     let res = grid.get_antinodes(false);
     if verbosity > 2 {

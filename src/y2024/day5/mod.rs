@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 type Data = Vec<Vec<u64>>;
 
-pub fn _main(data: PathBuf, _out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let (map, records) = parse(data)?;
     let res = get_sorted_sum(&map, &records);
     println!("{}, {}", res.0, res.1);

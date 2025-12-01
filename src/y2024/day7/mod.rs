@@ -1,7 +1,7 @@
 use super::{AOCError, Result};
 use std::{io::Read, path::PathBuf};
 
-pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let eqs = parse(data)?;
     let res = solve(&eqs)?;
     println!("part1 : {}, part2: {}", res.0, res.1);

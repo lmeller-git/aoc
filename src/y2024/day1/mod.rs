@@ -5,11 +5,11 @@ use std::path::PathBuf;
 
 type Array = (Vec<u64>, Vec<u64>);
 
-pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let data = load_data(data)?;
     let res2 = calc_similarity(&data);
     let res = get_diff(data);
-    write_data((res, res2), out)?;
+    write_data((res, res2))?;
     Ok(())
 }
 
@@ -60,7 +60,7 @@ fn load_data(data: PathBuf) -> Result<Array> {
     Ok(lines)
 }
 
-fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
-    std::fs::write(out, format!("{}, {}", data.0, data.1))?;
+fn write_data(data: (u64, u64)) -> Result<()> {
+    println!("res1: {}, res2: {}", data.0, data.1);
     Ok(())
 }

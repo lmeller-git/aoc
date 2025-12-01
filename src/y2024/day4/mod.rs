@@ -4,12 +4,11 @@ use std::path::PathBuf;
 
 type Array = Vec<Vec<u8>>;
 
-pub fn _main(data: PathBuf, out: PathBuf) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let arr = parse_data(data)?;
     let res = search(&arr);
     let res2 = search_x(&arr);
     println!("part1: {}, part2: {}", res, res2);
-    write_data((res, res2), out)?;
     Ok(())
 }
 
@@ -22,10 +21,6 @@ fn parse_data(data: PathBuf) -> Result<Array> {
     Ok(d.collect::<Array>())
 }
 
-fn write_data(data: (u64, u64), out: PathBuf) -> Result<()> {
-    std::fs::write(out, format!("{}, {}", data.0, data.1))?;
-    Ok(())
-}
 fn get_diags(arr: &Array) -> Array {
     let mut res = Array::new();
     for k in 0..arr[0].len() + arr.len() - 1 {

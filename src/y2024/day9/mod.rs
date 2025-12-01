@@ -1,7 +1,7 @@
 use super::{AOCError, Result};
 use std::{cmp::Ordering, fmt::Display, path::PathBuf};
 
-pub fn _main(data: PathBuf, _out: PathBuf, verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, verbosity: u8) -> Result<()> {
     println!("part1");
     let mut fs = FileSystem::parse(&data)?;
     fs.compact(verbosity);

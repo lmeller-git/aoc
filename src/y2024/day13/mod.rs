@@ -1,7 +1,7 @@
 use super::{AOCError, Result};
 use std::path::PathBuf;
 
-pub fn _main(data: PathBuf, _out: PathBuf, _verbosity: u8) -> Result<()> {
+pub fn _main(data: PathBuf, _verbosity: u8) -> Result<()> {
     let mut claw_machines = parse(&data, false)?;
     let res = solve(&mut claw_machines);
     let mut claw_machines2 = parse(&data, true)?;
