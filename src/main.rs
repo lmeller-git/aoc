@@ -66,6 +66,7 @@ fn main() -> Result<()> {
         (2025, 1) => y2025::day1::_main(args.data, args.verbosity),
         (2025, 2) => y2025::day2::_main(args.data, args.verbosity),
         (2025, 3) => y2025::day3::_main(args.data, args.verbosity),
+        (2025, 4) => y2025::day4::_main(args.data, args.verbosity),
         _ => Err(AOCError::GenError("Not implemented".into())),
     }?;
     Ok(())
